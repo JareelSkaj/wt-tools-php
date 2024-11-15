@@ -22,28 +22,34 @@ It's developed for PHP 8.3 and requires Zstd PHP extension to work.
 Usage: vromfs_unpacker.php <filename> [options]
 
 Arguments:
-  filename               vromfs file to unpack
+  filename                  vromfs file to unpack
 
 Options:
-  -O, --output=<path>   path where to unpack vromfs file
-                        by default is FILENAME with appended _u, like some.vromfs.bin_u
+  -O, --output=<path>       path where to unpack vromfs file
+                            by default is FILENAME with appended _u, like some.vromfs.bin_u
   
-  --metadata            if present, prints metadata of vromfs file: json with filename: md5_hash
-                        if --output option used, prints to file instead
+  --metadata                if present, prints metadata of vromfs file: json with filename: md5_hash
+                            if --output option used, prints to file instead
   
-  --input-filelist=<file>  pass the file with list of files you want to unpack
-                          files should be in json list format, like:
-                          ["buildtstamp", "gamedata/units/tankmodels/fr_b1_ter.blk"]
+  --input-filelist=<file>   pass the file with list of files you want to unpack
+                            files should be in json list format, like:
+                            ["buildtstamp", "gamedata/units/tankmodels/fr_b1_ter.blk"]
+                            or one file per line, like:
+                            version
+                            worldwar/maps/1v1_test_wwmap.blk
+                            you can even copy-paste output from --dry-run option, like:
+                            version                                                          9.00 B       File
+                            worldwar/maps/berlin_wwmap.blk                                 27.22 KB      BLK
   
-  --dry-run            show what would be extracted without actually extracting
+  -D, --dry-run             show what would be extracted without actually extracting
   
-  --silent            suppress all output except errors
+  --silent                  suppress all output except errors
   
-  --no-memory-check   disable memory check
-                          with this option you are more likely to get "PHP Fatal error:  Allowed memory size" error
-                          default behaviour is to provide a warning if your memory limit is clearly too low for a given file
+  --no-memory-check         disable memory check
+                            with this option you are more likely to get "PHP Fatal error:  Allowed memory size" error
+                            default behaviour is to provide a warning if your memory limit is clearly too low for a given file
 
-  -h, --help           display this help message
+  -h, --help                display this help message
 
 Examples:
   php vromfs_unpacker.php some.vromfs.bin
@@ -185,6 +191,7 @@ function main(array $argv): int
                     case '--input-filelist':
                         $options['input-filelist'] = $argv[++$i] ?? null;
                         break;
+                    case '-D':
                     case '--dry-run':
                         $options['dry-run'] = true;
                         break;

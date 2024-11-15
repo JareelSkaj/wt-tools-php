@@ -54,6 +54,44 @@ class VromfsUnpacker
         if ($fileSize === false) {
             throw new \RuntimeException("Could not determine file size: $filename");
         }
+        // Load --input-filelist
+        $fileList = null;
+        if ($fileListPath !== null) {
+            try {
+                $content = file_get_contents($fileListPath);
+                $jsonData = json_decode($content);
+                
+                // Check if it's valid JSON
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    // Verify it's a simple array
+                    if (!is_array($jsonData) && !is_string($jsonData[0] ?? null)) {
+                        throw new \RuntimeException(
+                            $fileListPath.' is an incorrectly formatted JSON,'.
+                            ' input just a plain array of strings, like: ["version", "worldwar/maps/berlin_wwmap.blk"]'
+                        );
+                    }
+                    $fileList = $jsonData;
+                } else {
+                    // Not JSON, process as plain text
+                    $fileList = array_filter(
+                        array_map(
+                            function($line) {
+                                return trim(strtok($line, '  ')); // double space is intentional
+                            },
+                            file($fileListPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+                        )
+                    );
+                }
+                
+                if (empty($fileList)) {
+                    if (!$this->silent) {
+                        echo "[WARN] Nothing to do: the file list is empty.\n";
+                    }
+                }
+            } catch (\Exception $e) {
+                throw new \RuntimeException("Failed to load file list from {$fileListPath}: {$e->getMessage()}");
+            }
+        }
         if ($this->defaultMemoryMultiplier > 0 ){
             // Check if we have enough memory
             $memoryLimit = $this->getMemoryLimitBytes();
@@ -118,8 +156,7 @@ class VromfsUnpacker
             $internalFilePath = $this->normalizeName($name->filename);
             
             // Skip if not in file list (when file list is provided)
-            if ($fileListPath !== null
-                && !in_array(strtolower($internalFilePath), $fileListPath, true)) {
+            if ($fileList !== null && !in_array($internalFilePath, $fileList)) {
                 continue;
             }
 
@@ -146,7 +183,7 @@ class VromfsUnpacker
                 };
 
                 if (!$this->silent) {
-                    sprintf("%-60s %10s %10s\n",
+                    echo sprintf("%-60s %10s %10s\n",
                         strlen($internalFilePath) > 59 
                             ? '...' . substr($internalFilePath, -56) 
                             : $internalFilePath,
